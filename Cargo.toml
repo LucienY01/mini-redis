@@ -1,0 +1,14 @@
+[package]
+name = "mini-redis"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { version = "1.37.0", features = ["full"] }
+clap = { version = "4.2.7", features = ["derive"] }
+bytes = "1"
+tracing = "0.1"
+atoi = "2.0.0"
+tracing-subscriber = { version = "0.3.11", features = ["env-filter"] }
+tokio-stream = "0.1"
+async-stream = "0.3.0"
