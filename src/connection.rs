@@ -1,3 +1,5 @@
+use std::io;
+
 use bytes::{Buf, BytesMut};
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt, BufWriter},
@@ -44,7 +46,7 @@ impl Connection {
         }
     }
 
-    pub async fn write_frame(&mut self, frame: &Frame) -> crate::Result<()> {
+    pub async fn write_frame(&mut self, frame: &Frame) -> io::Result<()> {
         match frame {
             Frame::Array(frames) => {
                 self.stream.write_u8(b'*').await?;
@@ -58,11 +60,11 @@ impl Connection {
             }
         }
 
-        Ok(())
+        self.stream.flush().await
     }
 
     /// Write a non-array frame to the stream.
-    async fn write_value(&mut self, frame: &Frame) -> crate::Result<()> {
+    async fn write_value(&mut self, frame: &Frame) -> io::Result<()> {
         match frame {
             Frame::Simple(s) => {
                 self.stream.write_u8(b'+').await?;
@@ -82,6 +84,7 @@ impl Connection {
                 self.stream.write_u8(b'$').await?;
                 self.write_decimal(val.len() as i64).await?;
                 self.stream.write_all(val).await?;
+                self.stream.write_all(b"\r\n").await?;
             }
             Frame::Null => {
                 self.stream.write_all(b"$-1\r\n").await?;
@@ -93,7 +96,7 @@ impl Connection {
     }
 
     /// Write a decimal line to the stream.
-    async fn write_decimal(&mut self, num: i64) -> crate::Result<()> {
+    async fn write_decimal(&mut self, num: i64) -> io::Result<()> {
         self.stream.write_all(num.to_string().as_bytes()).await?;
         self.stream.write_all(b"\r\n").await?;
         Ok(())

@@ -1,20 +1,20 @@
 mod get;
-use get::Get;
+pub use get::Get;
 
 mod publish;
-use publish::Publish;
+pub use publish::Publish;
 
 mod set;
-use set::Set;
+pub use set::Set;
 
 mod subscribe;
-use subscribe::{Subscribe, Unsubscribe};
+pub use subscribe::{Subscribe, Unsubscribe};
 
 mod ping;
-use ping::Ping;
+pub use ping::Ping;
 
 mod unknown;
-use unknown::Unknown;
+pub use unknown::Unknown;
 
 use crate::{connection::Connection, db::Db, shutdown::Shutdown};
 

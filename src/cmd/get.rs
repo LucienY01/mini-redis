@@ -1,3 +1,5 @@
+use bytes::Bytes;
+
 use crate::{connection::Connection, db::Db, frame::Frame};
 
 use super::Parse;
@@ -7,6 +9,12 @@ pub struct Get {
 }
 
 impl Get {
+    pub fn new(key: impl ToString) -> Get {
+        Get {
+            key: key.to_string(),
+        }
+    }
+
     pub fn from_frame(mut parse: Parse) -> crate::Result<Get> {
         match parse.next_string()? {
             Some(key) => Ok(Get { key }),
@@ -23,5 +31,12 @@ impl Get {
         conn.write_frame(&response).await?;
 
         Ok(())
+    }
+
+    pub(crate) fn into_frame(self) -> Frame {
+        let mut frame = Frame::array();
+        frame.push_bulk(Bytes::from("get".as_bytes()));
+        frame.push_bulk(Bytes::from(self.key.into_bytes()));
+        frame
     }
 }

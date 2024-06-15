@@ -13,6 +13,14 @@ pub struct Set {
 }
 
 impl Set {
+    pub fn new(key: impl ToString, value: Bytes, expire: Option<Duration>) -> Set {
+        Set {
+            key: key.to_string(),
+            value,
+            expire,
+        }
+    }
+
     pub fn from_frame(mut parse: Parse) -> crate::Result<Set> {
         let key = match parse.next_string()? {
             Some(key) => key,
@@ -49,5 +57,23 @@ impl Set {
         conn.write_frame(&response).await?;
 
         Ok(())
+    }
+
+    pub(crate) fn into_frame(self) -> Frame {
+        let mut frame = Frame::array();
+        frame.push_bulk(Bytes::from("set".as_bytes()));
+        frame.push_bulk(Bytes::from(self.key.into_bytes()));
+        frame.push_bulk(self.value);
+        if let Some(ms) = self.expire {
+            // Expirations in Redis procotol can be specified in two ways
+            // 1. SET key value EX seconds
+            // 2. SET key value PX milliseconds
+            // We the second option because it allows greater precision and
+            // src/bin/cli.rs parses the expiration argument as milliseconds
+            // in duration_from_ms_str()
+            frame.push_bulk(Bytes::from("px".as_bytes()));
+            frame.push_int(ms.as_millis() as i64);
+        }
+        frame
     }
 }

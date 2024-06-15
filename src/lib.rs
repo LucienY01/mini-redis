@@ -6,6 +6,9 @@ pub mod frame;
 pub mod server;
 pub mod shutdown;
 
+pub use connection::Connection;
+pub use frame::Frame;
+
 pub const DEFAULT_PORT: u16 = 6379;
 
 pub type Error = Box<dyn std::error::Error + Send + Sync>;

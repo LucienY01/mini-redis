@@ -13,6 +13,10 @@ pub struct Subscribe {
 }
 
 impl Subscribe {
+    pub(crate) fn new(channels: Vec<String>) -> Subscribe {
+        Subscribe { channels }
+    }
+
     pub fn from_frame(mut parse: Parse) -> crate::Result<Subscribe> {
         let mut channels = Vec::new();
         match parse.next_string()? {
@@ -61,6 +65,15 @@ impl Subscribe {
                 _ = shutdown.recv() => return Ok(()),
             }
         }
+    }
+
+    pub(crate) fn into_frame(self) -> Frame {
+        let mut frame = Frame::array();
+        frame.push_bulk(Bytes::from("subscribe".as_bytes()));
+        for channel in self.channels {
+            frame.push_bulk(Bytes::from(channel.into_bytes()));
+        }
+        frame
     }
 }
 
@@ -141,6 +154,12 @@ pub struct Unsubscribe {
 }
 
 impl Unsubscribe {
+    pub(crate) fn new(channels: &[String]) -> Unsubscribe {
+        Unsubscribe {
+            channels: channels.to_vec(),
+        }
+    }
+
     pub fn from_frame(mut parse: Parse) -> crate::Result<Self> {
         let mut channels = Vec::new();
 
@@ -149,5 +168,16 @@ impl Unsubscribe {
         }
 
         Ok(Self { channels })
+    }
+
+    pub(crate) fn into_frame(self) -> Frame {
+        let mut frame = Frame::array();
+        frame.push_bulk(Bytes::from("unsubscribe".as_bytes()));
+
+        for channel in self.channels {
+            frame.push_bulk(Bytes::from(channel.into_bytes()));
+        }
+
+        frame
     }
 }

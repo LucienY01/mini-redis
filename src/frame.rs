@@ -2,7 +2,7 @@ use bytes::{Buf, Bytes};
 use core::panic;
 use std::{fmt, string::FromUtf8Error};
 
-#[derive(PartialEq, Debug)]
+#[derive(PartialEq, Clone, Debug)]
 pub enum Frame {
     Simple(String),
     Error(String),
@@ -109,6 +109,63 @@ impl Frame {
                 frames.push(Frame::Integer(value));
             }
             _ => panic!("not an array frame"),
+        }
+    }
+
+    pub(crate) fn array() -> Frame {
+        Frame::Array(vec![])
+    }
+
+    pub(crate) fn to_error(&self) -> crate::Error {
+        format!("unexpected frame: {}", self).into()
+    }
+}
+
+impl PartialEq<&str> for Frame {
+    fn eq(&self, other: &&str) -> bool {
+        match self {
+            Frame::Simple(s) => s.eq(other),
+            Frame::Bulk(s) => s.eq(other),
+            _ => false,
+        }
+    }
+}
+
+impl PartialEq<String> for Frame {
+    fn eq(&self, other: &String) -> bool {
+        match self {
+            Frame::Simple(s) => s.eq(other),
+            Frame::Bulk(s) => s.eq(other),
+            _ => false,
+        }
+    }
+}
+
+impl fmt::Display for Frame {
+    fn fmt(&self, fmt: &mut fmt::Formatter) -> fmt::Result {
+        use std::str;
+
+        match self {
+            Frame::Simple(response) => response.fmt(fmt),
+            Frame::Error(msg) => write!(fmt, "error: {}", msg),
+            Frame::Integer(num) => num.fmt(fmt),
+            Frame::Bulk(msg) => match str::from_utf8(msg) {
+                Ok(string) => string.fmt(fmt),
+                Err(_) => write!(fmt, "{:?}", msg),
+            },
+            Frame::Null => "(nil)".fmt(fmt),
+            Frame::Array(parts) => {
+                for (i, part) in parts.iter().enumerate() {
+                    if i > 0 {
+                        // use space as the array element display separator
+                        write!(fmt, " ")?;
+                    }
+
+                    part.fmt(fmt)?;
+                }
+
+                Ok(())
+            }
         }
     }
 }
